@@ -46,6 +46,35 @@ long long KarmarkarKarpImplementation(vector<long long>& iElements) {
 
 	//After the diff loop only one element should remain in the heap. 
 	retVal = heap->extractMax();
+
+	delete heap;
+	return retVal;
+}
+
+double T(int iter) {
+	return (pow(10, 10)*(pow(0.8, iter/300)));
+}
+
+//Residue Calculate For Rep 1
+long long CalculateResidue(vector<long long>& iNumberSet, vector<int>& iSolutionSet) {
+	long long retVal = 0;
+	int setSize = iNumberSet.size();
+	for (int n = 0; n < setSize; ++n) {
+		retVal += (iNumberSet[n] * iSolutionSet[n]);
+	}
+	return abs(retVal);
+}
+
+//Residue Calculate For Rep 2
+long long CalculateResidueForPrePartition(vector<long long>& iNumberSet, vector<int>& iSolutionSet) {
+	long long retVal = 0;
+	int setSize = iNumberSet.size();
+	vector<long long> iNumberSet2(setSize, 0);
+	for (int j = 0; j < setSize; j++) {
+		int solutionIndex = iSolutionSet[j];
+		iNumberSet2[solutionIndex] += iNumberSet[j];
+	}
+	retVal = KarmarkarKarpImplementation(iNumberSet2);
 	return retVal;
 }
 
@@ -57,19 +86,6 @@ void RunAndAnalyzeKarmarkarKarp(vector<long long>& iNumberSet, ofstream& oResult
 	tEndKK = steady_clock::now();
 	duration<double, std::milli> diffKK = tEndKK - tStartKK;
 	oResultfile << "Karmarkar Karp Residue: " << residueKK << " Time: " << diffKK.count() << endl;
-}
-
-double T(int iter) {
-	return (pow(10, 10)*(pow(0.8, iter/300)));
-}
-
-long long CalculateResidue(vector<long long>& iNumberSet, vector<int>& iSolutionSet) {
-	long long retVal = 0;
-	int setSize = iNumberSet.size();
-	for (int n = 0; n < setSize; ++n) {
-		retVal += (iNumberSet[n] * iSolutionSet[n]);
-	}
-	return abs(retVal);
 }
 
 //Repeated Random Rep 1
@@ -92,10 +108,14 @@ void RunAndAnalyzeRepeatedRandomRep1(vector<long long>& iNumberSet, ofstream& oR
 	}
 	long long residue1 = CalculateResidue(iNumberSet, rand_Solution1);
 	vector<int> rand_Solution2;
+
+	random_device rd2;
+	mt19937 gen2(rd2());
+	uniform_int_distribution<int> dis2(0, 1);
 	for (int i = 0; i < MAX_ITER; i++) {
 		//Create a new random solution S'.
 		for (int n = 0; n < setSize; ++n) {
-			val = dis(gen);
+			val = dis2(gen2);
 			if (val == 0)
 				rand_Solution2.push_back(-1);
 			else
@@ -103,6 +123,41 @@ void RunAndAnalyzeRepeatedRandomRep1(vector<long long>& iNumberSet, ofstream& oR
 		}
 		
 		long long residue2 = CalculateResidue(iNumberSet, rand_Solution2);
+		if (residue2 < residue1) {
+			rand_Solution1 = rand_Solution2;
+			residue1 = residue2;
+		}
+		rand_Solution2.clear();
+	}
+	tEndRepReandom1 = steady_clock::now();
+	duration<double, std::milli> diffRepReandom1 = tEndRepReandom1 - tStartRepReandom1;
+	oResultfile << "Repeated Random Rep1: " << residue1 << " Time: " << diffRepReandom1.count() << endl;
+}
+
+//Repeated Random Rep 2
+void RunAndAnalyzeRepeatedRandomRep2(vector<long long>& iNumberSet, ofstream& oResultfile) {
+	//Generate a random solution P of [1,n]
+	chrono::steady_clock::time_point tStartRepReandom1;
+	chrono::steady_clock::time_point tEndRepReandom1;
+	tStartRepReandom1 = steady_clock::now();
+	int setSize = iNumberSet.size(), val = 0;
+	vector<int> rand_Solution1;
+	random_device rd;
+	mt19937 gen(rd());
+	uniform_int_distribution<int> dis(0, setSize-1);
+	for (int n = 0; n < setSize; ++n) {
+		val = dis(gen);
+		rand_Solution1.push_back(val);
+	}
+	long long residue1 = CalculateResidueForPrePartition(iNumberSet, rand_Solution1);
+	vector<int> rand_Solution2;
+	for (int i = 0; i < MAX_ITER; i++) {
+		//Create a new random solution P'.
+		for (int n = 0; n < setSize; ++n) {
+			val = dis(gen);
+			rand_Solution2.push_back(val);
+		}
+		long long residue2 = CalculateResidueForPrePartition(iNumberSet, rand_Solution2);
 		if (residue2 < residue1) {
 			rand_Solution1 = rand_Solution2;
 			residue1 = residue2;
@@ -133,7 +188,7 @@ void RunAndAnalyzeHillClimbingRep1(vector<long long>& iNumberSet, ofstream& oRes
 			rand_Solution1.push_back(val);
 	}
 	long long residue1 = CalculateResidue(iNumberSet, rand_Solution1);
-	//Repeated Random
+
 	int idx1 = 0, idx2 = 0, swapToss = 0;
 	vector<int> rand_Solution2;
 	rand_Solution2 = rand_Solution1;
@@ -150,6 +205,48 @@ void RunAndAnalyzeHillClimbingRep1(vector<long long>& iNumberSet, ofstream& oRes
 		if (swapToss == 0)
 			rand_Solution2[idx2] *= -1;
 		long long residue2 = CalculateResidue(iNumberSet, rand_Solution2);
+		if (residue2 < residue1) {
+			rand_Solution1 = rand_Solution2;
+			residue1 = residue2;
+		}
+		else {
+			rand_Solution2 = rand_Solution1;
+		}
+	}
+	tEndHillClimb1 = steady_clock::now();
+	duration<double, std::milli> diffHillClimb1 = tEndHillClimb1 - tStartHillClimb1;
+	oResultfile << "Hill Climb Rep1: " << residue1 << " Time: " << diffHillClimb1.count() << endl;
+}
+
+//Hill Climbing Rep 2
+void RunAndAnalyzeHillClimbingRep2(vector<long long>& iNumberSet, ofstream& oResultfile) {
+	chrono::steady_clock::time_point tStartHillClimb1;
+	chrono::steady_clock::time_point tEndHillClimb1;
+	tStartHillClimb1 = steady_clock::now();
+	//Generate a random solution S of +1 and -1 values
+	int setSize = iNumberSet.size();
+	vector<int> rand_Solution1;
+	random_device rd;
+	mt19937 gen(rd());
+	uniform_int_distribution<int> dis(0, setSize - 1);
+	for (int n = 0; n < setSize; ++n) {
+		int val = dis(gen);
+		rand_Solution1.push_back(val);
+	}
+	long long residue1 = CalculateResidueForPrePartition(iNumberSet, rand_Solution1);
+	int idx1 = 0, idx2 = 0;
+	vector<int> rand_Solution2;
+	rand_Solution2 = rand_Solution1;
+	//TO CHECK: if the distribution needs to be inside the loop
+	uniform_int_distribution<int> disRep(0, setSize - 1);
+	for (int i = 0; i < MAX_ITER; i++) {
+		idx1 = disRep(gen);
+		idx2 = disRep(gen);
+		while (rand_Solution1[idx1] == idx2)
+			idx2 = disRep(gen);
+		
+		rand_Solution2[idx1] = idx2;
+		long long residue2 = CalculateResidueForPrePartition(iNumberSet, rand_Solution2);
 		if (residue2 < residue1) {
 			rand_Solution1 = rand_Solution2;
 			residue1 = residue2;
@@ -229,6 +326,67 @@ void RunAndAnalyzeSimulatedAnnealingRep1(vector<long long>& iNumberSet, ofstream
 	oResultfile << "Simulated Annealing Rep1: " << residue3 << " Time: " << diffSimulatedAnnealing1.count() << endl;
 }
 
+//Simulated Annealing Rep 2
+void RunAndAnalyzeSimulatedAnnealingRep2(vector<long long>& iNumberSet, ofstream& oResultfile) {
+	chrono::steady_clock::time_point tStartSimulatedAnnealing1;
+	chrono::steady_clock::time_point tEndSimulatedAnnealing1;
+	tStartSimulatedAnnealing1 = steady_clock::now();
+	//Generate a random solution S of +1 and -1 values
+	int setSize = iNumberSet.size();
+	vector<int> rand_Solution1;
+	random_device rd;
+	mt19937 gen(rd());
+	uniform_real_distribution<> disReal(0, 1);
+	uniform_int_distribution<int> dis(0, setSize - 1);
+	for (int n = 0; n < setSize; ++n) {
+		int val = dis(gen);
+		rand_Solution1.push_back(val);
+	}
+	long long residue1 = CalculateResidueForPrePartition(iNumberSet, rand_Solution1);
+	//S" initialized with S
+	vector<int> rand_Solution3(rand_Solution1);
+	long long residue3 = residue1;
+
+	int idx1 = 0, idx2 = 0, swapToss = 0;
+	//S' - a random neighbor of S
+	vector<int> rand_Solution2;
+	rand_Solution2 = rand_Solution1;
+	//TO CHECK: if the distribution needs to be inside the loop
+	uniform_int_distribution<int> disRep(0, setSize - 1);
+	for (int i = 0; i < MAX_ITER; i++) {
+		idx1 = disRep(gen);
+		idx2 = disRep(gen);
+		while (rand_Solution1[idx1] == idx2)
+			idx2 = disRep(gen);
+
+		rand_Solution2[idx1] = idx2;
+		long long residue2 = CalculateResidueForPrePartition(iNumberSet, rand_Solution2);
+
+		if (residue2 < residue1) {
+			rand_Solution1 = rand_Solution2;
+			residue1 = residue2;
+		}
+		else {
+			double prob = disReal(gen);
+			long long diffResidue = residue2 - residue1;
+			double coolingSchedule = T(i + 1);
+			double coolingProb = exp(-(diffResidue) / coolingSchedule);
+			if ((coolingProb - prob) > 1.0e-12) {
+				rand_Solution1 = rand_Solution2;
+				residue1 = residue2;
+			}
+		}
+		if (residue1 < residue3) {
+			rand_Solution3 = rand_Solution1;
+			residue3 = residue1;
+		}
+	}
+
+	tEndSimulatedAnnealing1 = steady_clock::now();
+	duration<double, std::milli> diffSimulatedAnnealing1 = tEndSimulatedAnnealing1 - tStartSimulatedAnnealing1;
+	oResultfile << "Simulated Annealing Rep1: " << residue3 << " Time: " << diffSimulatedAnnealing1.count() << endl;
+}
+
 int main(int argc, char** argv) {
 	//STEP1-Run Karmarkar-Karp for one set of 100 random integers.
 	//Read the input file for matrix elements.
@@ -274,6 +432,11 @@ int main(int argc, char** argv) {
 		RunAndAnalyzeRepeatedRandomRep1(numberSet, result_file);
 		RunAndAnalyzeHillClimbingRep1(numberSet, result_file);
 		RunAndAnalyzeSimulatedAnnealingRep1(numberSet, result_file);
+
+		result_file << "**********************" << endl;
+		RunAndAnalyzeRepeatedRandomRep2(numberSet, result_file);
+		RunAndAnalyzeHillClimbingRep2(numberSet, result_file);
+		RunAndAnalyzeSimulatedAnnealingRep2(numberSet, result_file);
 
 		file.close();
 	}
