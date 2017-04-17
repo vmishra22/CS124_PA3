@@ -78,44 +78,56 @@ long long CalculateResidueForPrePartition(vector<long long>& iNumberSet, vector<
 	return retVal;
 }
 
-void RunAndAnalyzeKarmarkarKarp(vector<long long>& iNumberSet, ofstream& oResultfile) {
+void RunAndAnalyzeKarmarkarKarpRep1(vector<long long>& iNumberSet, ofstream& oResultfile, vector<long long>& oResidues, vector<double> oTotalTime) {
 	chrono::steady_clock::time_point tStartKK;
 	chrono::steady_clock::time_point tEndKK;
 	tStartKK = steady_clock::now();
 	long long residueKK = KarmarkarKarpImplementation(iNumberSet);
 	tEndKK = steady_clock::now();
 	duration<double, std::milli> diffKK = tEndKK - tStartKK;
-	oResultfile << "Karmarkar Karp Residue: " << residueKK << " Time: " << diffKK.count() << endl;
+	oResidues[0] += residueKK;
+	oTotalTime[0] += diffKK.count();
+	oResultfile << "Karmarkar Karp Rep1: " << residueKK << " Time: " << diffKK.count() << endl;
 }
 
+//void RunAndAnalyzeKarmarkarKarpRep2(vector<long long>& iNumberSet, vector<int>& iInitialSolution, ofstream& oResultfile) {
+//	chrono::steady_clock::time_point tStartKK;
+//	chrono::steady_clock::time_point tEndKK;
+//	tStartKK = steady_clock::now();
+//	long long retVal = 0;
+//	int setSize = iNumberSet.size();
+//
+//	vector<long long> iNumberSet2(setSize, 0);
+//	for (int j = 0; j < setSize; j++) {
+//		int solutionIndex = iInitialSolution[j];
+//		iNumberSet2[solutionIndex] += iNumberSet[j];
+//	}
+//	retVal = KarmarkarKarpImplementation(iNumberSet2);
+//	tEndKK = steady_clock::now();
+//	duration<double, std::milli> diffKK = tEndKK - tStartKK;
+//	oResultfile << "Karmarkar Karp Rep2: " << retVal << " Time: " << diffKK.count() << endl;
+//}
+
 //Repeated Random Rep 1
-void RunAndAnalyzeRepeatedRandomRep1(vector<long long>& iNumberSet, ofstream& oResultfile) {
+void RunAndAnalyzeRepeatedRandomRep1(vector<long long>& iNumberSet, vector<int>& iInitialSolution, ofstream& oResultfile, 
+							  vector<long long>& oResidues, vector<double> oTotalTime) {
 	//Generate a random solution S of +1 and -1 values
 	chrono::steady_clock::time_point tStartRepReandom1;
 	chrono::steady_clock::time_point tEndRepReandom1;
 	tStartRepReandom1 = steady_clock::now();
 	int setSize = iNumberSet.size(), val = 0;
-	vector<int> rand_Solution1;
+	vector<int> rand_Solution1(iInitialSolution);
 	random_device rd;
 	mt19937 gen(rd());
 	uniform_int_distribution<int> dis(0, 1);
-	for (int n = 0; n < setSize; ++n) {
-		val = dis(gen);
-		if (val == 0)
-			rand_Solution1.push_back(-1);
-		else
-			rand_Solution1.push_back(val);
-	}
+	
 	long long residue1 = CalculateResidue(iNumberSet, rand_Solution1);
 	vector<int> rand_Solution2;
 
-	random_device rd2;
-	mt19937 gen2(rd2());
-	uniform_int_distribution<int> dis2(0, 1);
 	for (int i = 0; i < MAX_ITER; i++) {
 		//Create a new random solution S'.
 		for (int n = 0; n < setSize; ++n) {
-			val = dis2(gen2);
+			val = dis(gen);
 			if (val == 0)
 				rand_Solution2.push_back(-1);
 			else
@@ -131,24 +143,23 @@ void RunAndAnalyzeRepeatedRandomRep1(vector<long long>& iNumberSet, ofstream& oR
 	}
 	tEndRepReandom1 = steady_clock::now();
 	duration<double, std::milli> diffRepReandom1 = tEndRepReandom1 - tStartRepReandom1;
+	oResidues[1] += residue1;
+	oTotalTime[1] += diffRepReandom1.count();
 	oResultfile << "Repeated Random Rep1: " << residue1 << " Time: " << diffRepReandom1.count() << endl;
 }
 
 //Repeated Random Rep 2
-void RunAndAnalyzeRepeatedRandomRep2(vector<long long>& iNumberSet, ofstream& oResultfile) {
+void RunAndAnalyzeRepeatedRandomRep2(vector<long long>& iNumberSet, vector<int>& iInitialSolution, ofstream& oResultfile,
+							  vector<long long>& oResidues, vector<double> oTotalTime) {
 	//Generate a random solution P of [1,n]
 	chrono::steady_clock::time_point tStartRepReandom1;
 	chrono::steady_clock::time_point tEndRepReandom1;
 	tStartRepReandom1 = steady_clock::now();
 	int setSize = iNumberSet.size(), val = 0;
-	vector<int> rand_Solution1;
+	vector<int> rand_Solution1(iInitialSolution);
 	random_device rd;
 	mt19937 gen(rd());
 	uniform_int_distribution<int> dis(0, setSize-1);
-	for (int n = 0; n < setSize; ++n) {
-		val = dis(gen);
-		rand_Solution1.push_back(val);
-	}
 	long long residue1 = CalculateResidueForPrePartition(iNumberSet, rand_Solution1);
 	vector<int> rand_Solution2;
 	for (int i = 0; i < MAX_ITER; i++) {
@@ -166,27 +177,24 @@ void RunAndAnalyzeRepeatedRandomRep2(vector<long long>& iNumberSet, ofstream& oR
 	}
 	tEndRepReandom1 = steady_clock::now();
 	duration<double, std::milli> diffRepReandom1 = tEndRepReandom1 - tStartRepReandom1;
-	oResultfile << "Repeated Random Rep1: " << residue1 << " Time: " << diffRepReandom1.count() << endl;
+	oResidues[4] += residue1;
+	oTotalTime[4] += diffRepReandom1.count();
+	oResultfile << "Repeated Random Rep2: " << residue1 << " Time: " << diffRepReandom1.count() << endl;
 }
 
 //Hill Climbing Rep 1
-void RunAndAnalyzeHillClimbingRep1(vector<long long>& iNumberSet, ofstream& oResultfile) {
+void RunAndAnalyzeHillClimbingRep1(vector<long long>& iNumberSet, vector<int>& iInitialSolution, ofstream& oResultfile,
+						  vector<long long>& oResidues, vector<double> oTotalTime) {
 	chrono::steady_clock::time_point tStartHillClimb1;
 	chrono::steady_clock::time_point tEndHillClimb1;
 	tStartHillClimb1 = steady_clock::now();
 	//Generate a random solution S of +1 and -1 values
 	int setSize = iNumberSet.size();
-	vector<int> rand_Solution1;
+	vector<int> rand_Solution1(iInitialSolution);
 	random_device rd;
 	mt19937 gen(rd());
 	uniform_int_distribution<int> dis(0, 1);
-	for (int n = 0; n < setSize; ++n) {
-		int val = dis(gen);
-		if (val == 0)
-			rand_Solution1.push_back(-1);
-		else
-			rand_Solution1.push_back(val);
-	}
+	
 	long long residue1 = CalculateResidue(iNumberSet, rand_Solution1);
 
 	int idx1 = 0, idx2 = 0, swapToss = 0;
@@ -215,24 +223,23 @@ void RunAndAnalyzeHillClimbingRep1(vector<long long>& iNumberSet, ofstream& oRes
 	}
 	tEndHillClimb1 = steady_clock::now();
 	duration<double, std::milli> diffHillClimb1 = tEndHillClimb1 - tStartHillClimb1;
+	oResidues[2] += residue1;
+	oTotalTime[2] += diffHillClimb1.count();
 	oResultfile << "Hill Climb Rep1: " << residue1 << " Time: " << diffHillClimb1.count() << endl;
 }
 
 //Hill Climbing Rep 2
-void RunAndAnalyzeHillClimbingRep2(vector<long long>& iNumberSet, ofstream& oResultfile) {
+void RunAndAnalyzeHillClimbingRep2(vector<long long>& iNumberSet, vector<int>& iInitialSolution, ofstream& oResultfile, 
+						  vector<long long>& oResidues, vector<double> oTotalTime) {
 	chrono::steady_clock::time_point tStartHillClimb1;
 	chrono::steady_clock::time_point tEndHillClimb1;
 	tStartHillClimb1 = steady_clock::now();
 	//Generate a random solution S of +1 and -1 values
 	int setSize = iNumberSet.size();
-	vector<int> rand_Solution1;
+	vector<int> rand_Solution1(iInitialSolution);
 	random_device rd;
 	mt19937 gen(rd());
-	uniform_int_distribution<int> dis(0, setSize - 1);
-	for (int n = 0; n < setSize; ++n) {
-		int val = dis(gen);
-		rand_Solution1.push_back(val);
-	}
+	
 	long long residue1 = CalculateResidueForPrePartition(iNumberSet, rand_Solution1);
 	int idx1 = 0, idx2 = 0;
 	vector<int> rand_Solution2;
@@ -257,28 +264,25 @@ void RunAndAnalyzeHillClimbingRep2(vector<long long>& iNumberSet, ofstream& oRes
 	}
 	tEndHillClimb1 = steady_clock::now();
 	duration<double, std::milli> diffHillClimb1 = tEndHillClimb1 - tStartHillClimb1;
-	oResultfile << "Hill Climb Rep1: " << residue1 << " Time: " << diffHillClimb1.count() << endl;
+	oResidues[5] += residue1;
+	oTotalTime[5] += diffHillClimb1.count();
+	oResultfile << "Hill Climb Rep2: " << residue1 << " Time: " << diffHillClimb1.count() << endl;
 }
 
 //Simulated Annealing Rep 1
-void RunAndAnalyzeSimulatedAnnealingRep1(vector<long long>& iNumberSet, ofstream& oResultfile) {
+void RunAndAnalyzeSimulatedAnnealingRep1(vector<long long>& iNumberSet, vector<int>& iInitialSolution, ofstream& oResultfile, 
+							   vector<long long>& oResidues, vector<double> oTotalTime) {
 	chrono::steady_clock::time_point tStartSimulatedAnnealing1;
 	chrono::steady_clock::time_point tEndSimulatedAnnealing1;
 	tStartSimulatedAnnealing1 = steady_clock::now();
 	//Generate a random solution S of +1 and -1 values
 	int setSize = iNumberSet.size();
-	vector<int> rand_Solution1;
+	vector<int> rand_Solution1(iInitialSolution);
 	random_device rd;
 	mt19937 gen(rd());
 	uniform_int_distribution<int> dis(0, 1);
 	uniform_real_distribution<> disReal(0, 1);
-	for (int n = 0; n < setSize; ++n) {
-		int val = dis(gen);
-		if (val == 0)
-			rand_Solution1.push_back(-1);
-		else
-			rand_Solution1.push_back(val);
-	}
+	
 	long long residue1 = CalculateResidue(iNumberSet, rand_Solution1);
 	//S" initialized with S
 	vector<int> rand_Solution3(rand_Solution1);
@@ -323,31 +327,30 @@ void RunAndAnalyzeSimulatedAnnealingRep1(vector<long long>& iNumberSet, ofstream
 
 	tEndSimulatedAnnealing1 = steady_clock::now();
 	duration<double, std::milli> diffSimulatedAnnealing1 = tEndSimulatedAnnealing1 - tStartSimulatedAnnealing1;
+	oResidues[3] += residue3;
+	oTotalTime[3] += diffSimulatedAnnealing1.count();
 	oResultfile << "Simulated Annealing Rep1: " << residue3 << " Time: " << diffSimulatedAnnealing1.count() << endl;
 }
 
 //Simulated Annealing Rep 2
-void RunAndAnalyzeSimulatedAnnealingRep2(vector<long long>& iNumberSet, ofstream& oResultfile) {
+void RunAndAnalyzeSimulatedAnnealingRep2(vector<long long>& iNumberSet, vector<int>& iInitialSolution, ofstream& oResultfile,
+							   vector<long long>& oResidues, vector<double> oTotalTime) {
 	chrono::steady_clock::time_point tStartSimulatedAnnealing1;
 	chrono::steady_clock::time_point tEndSimulatedAnnealing1;
 	tStartSimulatedAnnealing1 = steady_clock::now();
 	//Generate a random solution S of +1 and -1 values
 	int setSize = iNumberSet.size();
-	vector<int> rand_Solution1;
+	vector<int> rand_Solution1(iInitialSolution);
 	random_device rd;
 	mt19937 gen(rd());
 	uniform_real_distribution<> disReal(0, 1);
-	uniform_int_distribution<int> dis(0, setSize - 1);
-	for (int n = 0; n < setSize; ++n) {
-		int val = dis(gen);
-		rand_Solution1.push_back(val);
-	}
+	
 	long long residue1 = CalculateResidueForPrePartition(iNumberSet, rand_Solution1);
 	//S" initialized with S
 	vector<int> rand_Solution3(rand_Solution1);
 	long long residue3 = residue1;
 
-	int idx1 = 0, idx2 = 0, swapToss = 0;
+	int idx1 = 0, idx2 = 0;
 	//S' - a random neighbor of S
 	vector<int> rand_Solution2;
 	rand_Solution2 = rand_Solution1;
@@ -384,10 +387,13 @@ void RunAndAnalyzeSimulatedAnnealingRep2(vector<long long>& iNumberSet, ofstream
 
 	tEndSimulatedAnnealing1 = steady_clock::now();
 	duration<double, std::milli> diffSimulatedAnnealing1 = tEndSimulatedAnnealing1 - tStartSimulatedAnnealing1;
-	oResultfile << "Simulated Annealing Rep1: " << residue3 << " Time: " << diffSimulatedAnnealing1.count() << endl;
+	oResidues[6] += residue3;
+	oTotalTime[6] += diffSimulatedAnnealing1.count();
+	oResultfile << "Simulated Annealing Rep2: " << residue3 << " Time: " << diffSimulatedAnnealing1.count() << endl;
 }
 
 int main(int argc, char** argv) {
+	(void)argc;
 	//STEP1-Run Karmarkar-Karp for one set of 100 random integers.
 	//Read the input file for matrix elements.
 	ifstream file;
@@ -416,7 +422,8 @@ int main(int argc, char** argv) {
 		string fileName = "input" + to_string(i);
 		generate_random_ints(fileName);
 	}
-	
+	vector<long long> Residues(7, 0);
+	vector<double> Total_Time(7, 0);
 	//Running different heuristics on 100 datasets.
 	for (int i = 1; i <= setSize; i++) {
 		string fileName = "input" + to_string(i);
@@ -428,18 +435,51 @@ int main(int argc, char** argv) {
 			numberSet.push_back(num);
 		}
 
-		RunAndAnalyzeKarmarkarKarp(numberSet, result_file);
-		RunAndAnalyzeRepeatedRandomRep1(numberSet, result_file);
-		RunAndAnalyzeHillClimbingRep1(numberSet, result_file);
-		RunAndAnalyzeSimulatedAnnealingRep1(numberSet, result_file);
+		RunAndAnalyzeKarmarkarKarpRep1(numberSet, result_file, Residues, Total_Time);
+
+		vector<int> rand_SolutionRep1;
+		random_device rd;
+		mt19937 gen(rd());
+		uniform_int_distribution<int> dis(0, 1);
+		for (int n = 0; n < setSize; ++n) {
+			int val = dis(gen);
+			if (val == 0)
+				rand_SolutionRep1.push_back(-1);
+			else
+				rand_SolutionRep1.push_back(val);
+		}
+		RunAndAnalyzeRepeatedRandomRep1(numberSet, rand_SolutionRep1, result_file, Residues, Total_Time);
+		RunAndAnalyzeHillClimbingRep1(numberSet, rand_SolutionRep1, result_file, Residues, Total_Time);
+		RunAndAnalyzeSimulatedAnnealingRep1(numberSet, rand_SolutionRep1, result_file, Residues, Total_Time);
+
+		vector<int> rand_SolutionRep2;
+		uniform_int_distribution<int> disRep2(0, setSize - 1);
+		for (int n = 0; n < setSize; ++n) {
+			int val = disRep2(gen);
+			rand_SolutionRep2.push_back(val);
+		}
+		//RunAndAnalyzeKarmarkarKarpRep2(numberSet, rand_SolutionRep2, result_file);
+		RunAndAnalyzeRepeatedRandomRep2(numberSet, rand_SolutionRep2, result_file, Residues, Total_Time);
+		RunAndAnalyzeHillClimbingRep2(numberSet, rand_SolutionRep2, result_file, Residues, Total_Time);
+		RunAndAnalyzeSimulatedAnnealingRep2(numberSet, rand_SolutionRep2, result_file, Residues, Total_Time);
 
 		result_file << "**********************" << endl;
-		RunAndAnalyzeRepeatedRandomRep2(numberSet, result_file);
-		RunAndAnalyzeHillClimbingRep2(numberSet, result_file);
-		RunAndAnalyzeSimulatedAnnealingRep2(numberSet, result_file);
 
 		file.close();
 	}
+	//Calculate Averages
+	for (int k = 0; k < (int)Residues.size(); k++) {
+		Residues[k] = Residues[k] / 7;
+		Total_Time[k] = Total_Time[k] / 7;
+	}
+
+	result_file << "Karmarkar-Karp Average Residue: " << Residues[0] << "Time Average: " << Total_Time[0] << endl;
+	result_file << "Repeated Random Rep1 Residue: " << Residues[1] << "Time Average: " << Total_Time[1] << endl;
+	result_file << "Hill Climbing Rep1 Average Residue: " << Residues[2] << "Time Average: " << Total_Time[2] << endl;
+	result_file << "Simulated Annealing Rep1 Average Residue: " << Residues[3] << "Time Average: " << Total_Time[3] << endl;
+	result_file << "Repeated Random Rep2 Average Residue: " << Residues[4] << "Time Average: " << Total_Time[4] << endl;
+	result_file << "Hill Climbing Rep2 Average Residue: " << Residues[5] << "Time Average: " << Total_Time[5] << endl;
+	result_file << "Simulated Annealing Rep2 Average Residue: " << Residues[6] << "Time Average: " << Total_Time[6] << endl;
 
 	result_file.close();
 	return 0;
